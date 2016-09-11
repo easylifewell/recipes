@@ -18,8 +18,16 @@ func CreateDB() {
 	os.Remove(dbname)
 
 	db, err := sql.Open("sqlite3", dbname)
+	if err != nil {
+		logrus.Fatalf("open sqlite3 db error: %q", err)
+	}
 	defer db.Close()
 
+	createClocks(db)
+}
+
+//CreateDB create the database for recipes recommend
+func createClocks(db *sql.DB) {
 	sqlStmt := `
 	create table clocks (
 		id		INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,7 +60,7 @@ func CreateDB() {
 		{"晚餐", "亥", 21, 23, "三焦"},
 		{"晚餐", "子", 23, 1, "胆"},
 	}
-	_, err = db.Exec(sqlStmt)
+	_, err := db.Exec(sqlStmt)
 	if err != nil {
 		logrus.Errorf("%q: %s\n", err, sqlStmt)
 	}
