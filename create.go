@@ -25,6 +25,82 @@ func CreateDB() {
 
 	createClocks(db)
 	createFoodMatch(db)
+	createFoodList(db)
+}
+func createFoodList(db *sql.DB) {
+	sqlStmt := `
+	create table food_list(
+		id              INTEGER PRIMARY KEY AUTOINCREMENT,
+		food_id		TEXT,
+		food_name	TEXT,
+		kind_id		TEXT,
+		kind_name	TEXT,
+		UNIQUE(food_id)
+	);
+	delete from food_list;
+	`
+
+	foodListData := []struct {
+		foodID   string
+		foodName string
+		kindID   string
+		kindName string
+	}{
+		{"FF1", "苹果", "C2", "水果"},
+		{"FF2", "香蕉", "C2", "水果"},
+		{"FF3", "梨", "C2", "水果"},
+		{"FF4", "芒果", "C2", "水果"},
+		{"FF5", "菠萝", "C2", "水果"},
+		{"FF6", "草莓", "C2", "水果"},
+		{"FF7", "杏", "C2", "水果"},
+	}
+
+	_, err := db.Exec(sqlStmt)
+	if err != nil {
+		logrus.Errorf("%q: %s\n", err, sqlStmt)
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	stmt, err := tx.Prepare("insert into food_list(food_id, food_name, kind_id, kind_name) values (?, ?, ?, ?)")
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer stmt.Close()
+
+	for _, d := range foodListData {
+		_, err = stmt.Exec(d.foodID, d.foodName, d.kindID, d.kindName)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+	}
+	tx.Commit()
+
+	rows, err := db.Query("select id, food_id, food_name, kind_id, kind_name from food_list")
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id int
+		var foodID string
+		var foodName string
+		var kindID string
+		var kindName string
+		err = rows.Scan(&id, &foodID, &foodName, &kindID, &kindName)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		fmt.Println(id, foodID, foodName, kindID, kindName)
+	}
+	err = rows.Err()
+	if err != nil {
+		logrus.Fatal(err)
+	}
 }
 
 func createFoodMatch(db *sql.DB) {
